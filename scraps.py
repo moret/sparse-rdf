@@ -1,4 +1,5 @@
 import rdflib
+import redis
 
 def set_from_generator(generator):
     l = []
@@ -14,17 +15,18 @@ def mark_and_enqueue(path, edge, node, qeue, marked):
     qeue.append((node, node_path))
     marked.append(node)
 
-def find_sources_and_sinks(graph):
+def find_nodes_sources_and_sinks(graph):
     subjects = set_from_generator(graph.subjects())
     objects = set_from_generator(graph.objects())
     return subjects.union(objects), subjects - objects, objects - subjects
 
-def main():
-    graph = rdflib.Graph()
-    graph.parse('paper.nt', format='nt')
-    # graph.parse('linkedmdb-latest-dump.nt', format='nt')
+def store_hash_list(l_name, l):
+    r = redis.StrictRedis()
+    r.delete(l_name)
+    for i in l:
+        r.lpush(l_name, i)
 
-    nodes, sources, sinks = find_sources_and_sinks(graph)
+def find_paths_templates(graph, sources, sinks):
     paths = set()
     templates = set()
 
@@ -42,20 +44,41 @@ def main():
                 if node not in marked:
                     mark_and_enqueue(current_path, edge, node, qeue, marked)
 
-    print ':: nodes (total: %d) ::' % len(nodes)
-    for node in nodes:
-        print node
-    print
+    return paths, templates
 
-    print ':: paths (total: %d) ::' % len(paths)
-    for path in paths:
-        print path
-    print
+def store_sparse_rdf(nodes, paths, templates):
+    r = redis.StrictRedis()
+    for i, path in enumerate(paths):
+        r.delete('path:%d' % i)
+        for j, node in enumerate(nodes):
+            if node in path:
+                r.hset('path:%d' % i, j, (j, i))
 
-    print ':: templates (total: %d) ::' % len(templates)
-    for template in templates:
-        print template
-    print
+def main():
+    print 'parsing graph...'
+    graph = rdflib.Graph()
+    graph.parse('paper.nt', format='nt')
+    # graph.parse('NTN-individuals.owl')
+    # graph.parse('opus_august2007.rdf')
+    # graph.parse('swetodblp_april_2008.rdf')
+    # graph.parse('linkedmdb-latest-dump.nt', format='nt')
+
+    print 'listing nodes, sources and sinks...'
+    nodes, sources, sinks = find_nodes_sources_and_sinks(graph)
+
+    print 'listing paths and templates...'
+    paths, templates = find_paths_templates(graph, sources, sinks)
+
+    print 'listed - nodes: %d, paths: %d, templates: %d' % (len(nodes),
+            len(paths), len(templates))
+    store_hash_list('nodes', nodes)
+    store_hash_list('paths', paths)
+    store_hash_list('templates', templates)
+
+    print 'storing sparse matrix...'
+    store_sparse_rdf(nodes, paths, templates)
+
+    print 'done - bye!'
 
 if __name__ == "__main__":
     main()
