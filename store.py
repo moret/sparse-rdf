@@ -1,13 +1,14 @@
 import rdflib
 import redis
 
-def set_from_generator(generator):
+def list_from_generator(generator):
     l = []
     for item in generator:
         l.append(item)
-    return set(l)
+    return l
 
 def mark_and_enqueue(path, edge, node, qeue, marked):
+    # copy current path to store modified version
     node_path = list(path)
     if edge != None:
         node_path.append(edge)
@@ -16,19 +17,25 @@ def mark_and_enqueue(path, edge, node, qeue, marked):
     marked.append(node)
 
 def find_nodes_sources_and_sinks(graph):
-    subjects = set_from_generator(graph.subjects())
-    objects = set_from_generator(graph.objects())
-    return subjects.union(objects), subjects - objects, objects - subjects
+    subjects = list_from_generator(graph.subjects())
+    objects = list_from_generator(graph.objects())
+
+    # TODO arrumar forma decente de guardar valores unicos em array
+    nodes = list(set(subjects).union(set(objects)))
+    sources = list(set(subjects) - set(objects))
+    sinks = list(set(objects) - set(subjects))
+
+    return nodes, sources, sinks
 
 def store_hash_list(l_name, l):
     r = redis.StrictRedis()
     r.delete(l_name)
     for i in l:
-        r.lpush(l_name, i)
+        r.rpush(l_name, i)
 
 def find_paths_templates(graph, sources, sinks):
-    paths = set()
-    templates = set()
+    paths = []
+    templates = []
 
     for source in sources:
         path = []
@@ -38,24 +45,33 @@ def find_paths_templates(graph, sources, sinks):
         while len(qeue) > 0:
             current_node, current_path = qeue.pop()
             if current_node in sinks:
-                paths.add(tuple(current_path))
-                templates.add(tuple(current_path[1::2]))
+                paths.append(tuple(current_path))
+                templates.append(tuple(current_path[1::2]))
             for edge, node in graph.predicate_objects(current_node):
                 if node not in marked:
                     mark_and_enqueue(current_path, edge, node, qeue, marked)
 
-    return paths, templates
+    # TODO arrumar forma decente de guardar valores unicos em array
+    unique_paths = list(set(paths))
+    unique_templates = list(set(templates))
+    return unique_paths, unique_templates
 
-def store_sparse_rdf(nodes, paths, templates):
+def build_sparse_rdf(nodes, paths, templates):
     r = redis.StrictRedis()
     for i, path in enumerate(paths):
-        r.delete('path:%d' % i)
+        r.delete('row:%d' % i)
         for j, node in enumerate(nodes):
             if node in path:
-                r.hset('path:%d' % i, j, (j, i))
+                nodes_template = path[::2]
+                path_template = path[1::2]
+                p = nodes_template.index(node) # posicao do node no path
+                l = len(nodes_template) # quantos nodes tem no path
+                t = templates.index(path_template) # qual o template
+                r.hset('row:%d' % i, j, (p, l, t))
 
 def main():
     print 'parsing graph...'
+    # parsing the whole graph at once is dumb - it never ends for large sets
     graph = rdflib.Graph()
     graph.parse('paper.nt', format='nt')
     # graph.parse('NTN-individuals.owl')
@@ -75,8 +91,8 @@ def main():
     store_hash_list('paths', paths)
     store_hash_list('templates', templates)
 
-    print 'storing sparse matrix...'
-    store_sparse_rdf(nodes, paths, templates)
+    print 'building sparse matrix...'
+    build_sparse_rdf(nodes, paths, templates)
 
     print 'done - bye!'
 
