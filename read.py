@@ -4,8 +4,10 @@ def print_matrix(nodes, paths):
     print 'matrix:'
     r = redis.StrictRedis()
     s = ''
-    for i, path in enumerate(paths):
-        for j, node in enumerate(nodes):
+    nodes_len = int(r.get('nodes_len'))
+    paths_len = int(r.get('paths_len'))
+    for i in range(paths_len):
+        for j in range(nodes_len):
             entry = r.hget('row:%d' % i, j)
             if entry:
                 s += entry
@@ -23,11 +25,11 @@ def print_index(l_name, l):
 
 def main():
     r = redis.StrictRedis()
-    nodes = r.lrange('nodes', 0, -1)
-    paths = r.lrange('paths', 0, -1)
-    templates = r.lrange('templates', 0, -1)
+    nodes = r.zrange('nodes', 0, -1)
+    paths = r.zrange('paths', 0, -1)
+    templates = r.zrange('templates', 0, -1)
 
-    # print_index('nodes', nodes)
+    print_index('nodes', nodes)
     print_index('paths', paths)
     print_index('templates', templates)
 

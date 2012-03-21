@@ -29,9 +29,8 @@ def find_nodes_sources_and_sinks(graph):
 
 def store_hash_list(l_name, l):
     r = redis.StrictRedis()
-    r.delete(l_name)
-    for i in l:
-        r.rpush(l_name, i)
+    for index, item in enumerate(l):
+        r.zadd(l_name, index, item)
 
 def find_paths_templates(graph, sources, sinks):
     paths = []
@@ -56,10 +55,9 @@ def find_paths_templates(graph, sources, sinks):
     unique_templates = list(set(templates))
     return unique_paths, unique_templates
 
-def build_sparse_rdf(nodes, paths, templates):
+def build_sparse_matrix(nodes, paths, templates):
     r = redis.StrictRedis()
     for i, path in enumerate(paths):
-        r.delete('row:%d' % i)
         for j, node in enumerate(nodes):
             if node in path:
                 nodes_template = path[::2]
@@ -68,8 +66,21 @@ def build_sparse_rdf(nodes, paths, templates):
                 l = len(nodes_template) # quantos nodes tem no path
                 t = templates.index(path_template) # qual o template
                 r.hset('row:%d' % i, j, (p, l, t))
+    r.set('nodes_len', len(nodes))
+    r.set('paths_len', len(paths))
+
+def delete_sparse_matrix_and_indexes():
+    r = redis.StrictRedis()
+    r.delete('nodes')
+    r.delete('paths')
+    r.delete('templates')
+    for i in range(int(r.get('paths_len'))):
+        r.delete('row:%d' % i)
 
 def main():
+    print 'deleting old sparse matrix...'
+    delete_sparse_matrix_and_indexes()
+
     print 'parsing graph...'
     # parsing the whole graph at once is dumb - it never ends for large sets
     graph = rdflib.Graph()
@@ -92,7 +103,7 @@ def main():
     store_hash_list('templates', templates)
 
     print 'building sparse matrix...'
-    build_sparse_rdf(nodes, paths, templates)
+    build_sparse_matrix(nodes, paths, templates)
 
     print 'done - bye!'
 
