@@ -1,4 +1,5 @@
 pytest==2.2.3
+coverage==3.5.1
 paver==1.0.5
 rdflib==3.2.0
 html5lib==0.95

@@ -20,9 +20,6 @@ class Redis(object):
     def _get_list_element(self, n, i):
         return self.r.lindex(n, i)
 
-    def _get_list(self, n):
-        return self.r.lrange(n, 0, -1)
-
     def _replace_collection_of_lists(self, n, l):
         self.r.delete(n)
         for s, i in enumerate(l):
@@ -37,12 +34,6 @@ class Redis(object):
     def _get_collection_of_lists_index(self, n, e):
         return self.r.zrank(n, json.dumps(e))
 
-    def _get_collection_of_lists(self, n):
-        c = []
-        for i in self.r.zrange(n, 0, -1):
-            c.append(json.loads(i))
-        return c
-
     def replace_all_nodes(self, nodes):
         self._replace_list('nodes', nodes)
 
@@ -52,9 +43,6 @@ class Redis(object):
     def get_node(self, index):
         return self._get_list_element('nodes', index)
 
-    def get_nodes(self):
-        return self._get_list('nodes')
-
     def replace_all_paths(self, paths):
         self._replace_collection_of_lists('paths', paths)
 
@@ -63,9 +51,6 @@ class Redis(object):
 
     def get_path(self, index):
         return self._get_collection_of_lists_element('paths', index)
-
-    def get_paths(self):
-        return self._get_collection_of_lists('paths')
 
     def replace_all_templates(self, templates):
         self._replace_collection_of_lists('templates', templates)
@@ -78,9 +63,6 @@ class Redis(object):
 
     def get_template_index(self, template):
         return self._get_collection_of_lists_index('templates', template)
-
-    def get_templates(self):
-        self._get_collection_of_lists('templates')
 
     def store_tuple(self, path_index, node_index, cell_tuple):
         self.r.sadd('sparse_matrix_rows', 'row:%d' % path_index)

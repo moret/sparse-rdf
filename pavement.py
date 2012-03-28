@@ -7,12 +7,18 @@ sys.path = ['.'] + sys.path
 from paver.easy import task
 from paver.easy import sh
 import pytest
+import coverage
 
 
 @task
 def tests():
     clean()
+    cov = coverage.coverage()
+    cov.erase()
+    cov.start()
     pytest.main('-s -v tests')
+    cov.stop()
+    cov.report()
     clean()
 
 
