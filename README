@@ -1,0 +1,17 @@
+You know, this is still WIP.
+
+To run it, I'd recommend using virtualenv.
+
+After you're in your desired environment, just:
+
+pip install -r requirements.pip
+
+And to run the tests:
+
+paver tests
+
+Go on and develop.
+
+Danilo Moret
+PUC-Rio
+Globo.com
