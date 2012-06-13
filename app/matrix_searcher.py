@@ -5,8 +5,12 @@ class MatrixSearcher(object):
     def __init__(self):
         self.redis = app_redis
 
-    def node_query(self):
-        self.redis.get_matrix_column()
+    def node_query(self, node_index):
+        col = self.redis.get_column(node_index)
+        paths = []
+        for path_index in col.keys():
+            paths.append(self.redis.get_path(path_index))
+        return paths
 
     # def final_node_query(self):
     #     pass

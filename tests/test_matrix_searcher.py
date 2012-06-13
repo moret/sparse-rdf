@@ -1,18 +1,23 @@
-# from app.graph_parser import graph_parser
-# from app.index_parser import index_parser
+from app.index_parser import index_parser
 
 from app.matrix_searcher import matrix_searcher
 from app.db import Redis
+from app.db import redis
+from tests.assets.paper import paper_nodes
+from tests.assets.paper import paper_paths
+from tests.assets.paper import paper_templates
 
 
 class TestRedis(Redis):
     pass
 
 
-# def set_default_paper_matrix():
-#     graph_parser.parse('tests/assets/paper.nt')
-#     graph_parser.persist_index()
-#     index_parser.generate_sparse_matrix()
+def set_default_paper_matrix():
+    redis.replace_all_nodes(paper_nodes)
+    redis.replace_all_paths(paper_paths)
+    redis.replace_all_templates(paper_templates)
+
+    index_parser.generate_sparse_matrix()
 
 
 def test_exist():
@@ -22,11 +27,20 @@ def test_exist():
 def test_node_query_retrieves_column(monkeypatch):
     test_redis = TestRedis()
 
-    def mock_get_matrix_column():
-        test_redis.get_matrix_column_invoked = True
+    def mock_get_column(node_index):
+        test_redis.get_column_invoked = True
+        return {}
 
-    test_redis.get_matrix_column = mock_get_matrix_column
+    test_redis.get_column = mock_get_column
     monkeypatch.setattr(matrix_searcher, 'redis', test_redis)
 
-    matrix_searcher.node_query()
-    assert test_redis.get_matrix_column_invoked
+    matrix_searcher.node_query(2)
+    assert test_redis.get_column_invoked
+
+
+def test_node_query_researcher_retrieves_expected_subset():
+    set_default_paper_matrix()
+    paths = matrix_searcher.node_query(2)
+    assert 2 == len(paths)
+    assert paper_paths[6] in paths
+    assert paper_paths[9] in paths
