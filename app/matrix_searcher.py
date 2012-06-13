@@ -12,8 +12,13 @@ class MatrixSearcher(object):
             paths.append(self.redis.get_path(path_index))
         return paths
 
-    # def final_node_query(self):
-    #     pass
+    def final_node_query(self, node_index):
+        col = self.redis.get_column(node_index)
+        paths = []
+        for path_index, t in col.items():
+            if t[0] == (t[1] - 1):
+                paths.append(self.redis.get_path(path_index))
+        return paths
 
     # def path_query(self):
     #     pass
