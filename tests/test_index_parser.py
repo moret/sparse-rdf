@@ -1,3 +1,4 @@
+from app.graph_parser import graph_parser
 from app.index_parser import index_parser
 from app.db import Redis
 
@@ -22,6 +23,14 @@ def test_get_tuple_tries_to_get_template_index(monkeypatch):
 
     index_parser.get_tuple('nod1', ['nod1', 'nod2'])
     assert test_redis.get_template_index_invoked
+
+
+def test_get_tuple_returns_size_three_list():
+    graph_parser.parse('tests/assets/paper.nt')
+    graph_parser.persist_index()
+    t = index_parser.get_tuple('nod1', ['nod1', 'nod2'])
+    assert isinstance(t, list)
+    assert 3 == len(t)
 
 
 def test_generate_sparse_matrix_clears_old_sparse_matrix(monkeypatch):

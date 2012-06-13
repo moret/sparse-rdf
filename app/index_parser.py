@@ -21,6 +21,6 @@ class IndexParser(object):
         p = nodes_template.index(node)  # posicao do node no path
         l = len(nodes_template)  # quantos nodes tem no path
         t = self.redis.get_template_index(path_template)  # qual o template
-        return (p, l, t)
+        return [p, l, t]
 
 index_parser = IndexParser()

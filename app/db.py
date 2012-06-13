@@ -65,13 +65,29 @@ class Redis(object):
         return self._get_collection_of_lists_index('templates', template)
 
     def store_tuple(self, path_index, node_index, cell_tuple):
-        self.r.sadd('sparse_matrix_rows', 'row:%d' % path_index)
-        self.r.hset('row:%d' % path_index, node_index, json.dumps(cell_tuple))
+        if cell_tuple == None or (isinstance(cell_tuple, list) and len(cell_tuple) == 3):
+            self.r.sadd('sparse_matrix_rows', 'row:%d' % path_index)
+            self.r.hset('row:%d' % path_index, node_index, json.dumps(cell_tuple))
+
+            self.r.sadd('sparse_matrix_cols', 'col:%d' % node_index)
+            self.r.hset('col:%d' % node_index, path_index, json.dumps(cell_tuple))
+        else:
+            raise ValueError('must be a size three list or None')
 
     def get_tuple(self, path_index, node_index):
         cell = self.r.hget('row:%d' % path_index, node_index)
         if cell:
-            return tuple(json.loads(cell))
+            return json.loads(cell)
+        else:
+            return None
+
+    def get_column(self, node_index):
+        raw_col = self.r.hgetall('col:%d' % node_index)
+        if raw_col:
+            col = {}
+            for key, value in raw_col.items():
+                col[int(key)] = json.loads(value)
+            return col
         else:
             return None
 
@@ -79,5 +95,9 @@ class Redis(object):
         for row_name in self.r.smembers('sparse_matrix_rows'):
             self.r.srem('sparse_matrix_rows', row_name)
             self.r.delete(row_name)
+
+        for col_name in self.r.smembers('sparse_matrix_cols'):
+            self.r.srem('sparse_matrix_cols', col_name)
+            self.r.delete(col_name)
 
 redis = Redis()
