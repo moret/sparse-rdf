@@ -69,3 +69,34 @@ def test_final_node_query_pub1_retrieves_expected_subset():
     set_default_paper_matrix()
     paths = matrix_searcher.final_node_query(3)
     assert 0 == len(paths)
+
+
+def test_path_query_retrieves_column(monkeypatch):
+    test_redis = TestRedis()
+
+    def mock_get_row(path_index):
+        test_redis.get_row_invoked = True
+        return {}
+
+    test_redis.get_row = mock_get_row
+    monkeypatch.setattr(matrix_searcher, 'redis', test_redis)
+
+    matrix_searcher.path_query(0)
+    assert test_redis.get_row_invoked
+
+
+def test_path_query_path0_retrieves_expected_subset():
+    set_default_paper_matrix()
+    nodes = matrix_searcher.path_query(0)
+    assert 2 == len(nodes)
+    assert paper_nodes[3] in nodes
+    assert paper_nodes[5] in nodes
+
+
+def test_path_query_path4_retrieves_expected_subset():
+    set_default_paper_matrix()
+    nodes = matrix_searcher.path_query(4)
+    assert 3 == len(nodes)
+    assert paper_nodes[3] in nodes
+    assert paper_nodes[6] in nodes
+    assert paper_nodes[7] in nodes

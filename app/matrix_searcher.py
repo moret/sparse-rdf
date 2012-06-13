@@ -20,8 +20,12 @@ class MatrixSearcher(object):
                 paths.append(self.redis.get_path(path_index))
         return paths
 
-    # def path_query(self):
-    #     pass
+    def path_query(self, path_index):
+        row = self.redis.get_row(path_index)
+        nodes = []
+        for node_index in row.keys():
+            nodes.append(self.redis.get_node(node_index))
+        return nodes
 
     # def path_intersection_query(self):
     #     pass
