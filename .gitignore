@@ -1,5 +1,3 @@
-linkedmdb-latest-dump.nt
-swetodblp_april_2008.rdf
-NTN-individuals.owl
-opus_august2007.rdf
 .coverage
+example-rdfs/grande/*
+example-rdfs/venti/*
