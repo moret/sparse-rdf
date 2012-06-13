@@ -81,6 +81,16 @@ class Redis(object):
         else:
             return None
 
+    def get_row(self, path_index):
+        raw_row = self.r.hgetall('row:%d' % path_index)
+        if raw_row:
+            row = {}
+            for key, value in raw_row.items():
+                row[int(key)] = json.loads(value)
+            return row
+        else:
+            return None
+
     def get_column(self, node_index):
         raw_col = self.r.hgetall('col:%d' % node_index)
         if raw_col:
@@ -90,6 +100,13 @@ class Redis(object):
             return col
         else:
             return None
+
+    def get_sparse_matrix(self):
+        matrix = {}
+        for row_name in self.r.smembers('sparse_matrix_rows'):
+            path_index = int(row_name.split(':')[1])
+            matrix[path_index] = self.get_row(path_index)
+        return matrix
 
     def clear_sparse_matrix(self):
         for row_name in self.r.smembers('sparse_matrix_rows'):

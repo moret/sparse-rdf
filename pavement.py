@@ -23,7 +23,7 @@ def tests():
 
 
 @task
-def run():
+def parse():
     clean()
 
     from app.graph_parser import graph_parser
@@ -32,6 +32,16 @@ def run():
     graph_parser.parse('tests/assets/paper.nt')
     graph_parser.persist_index()
     index_parser.generate_sparse_matrix()
+
+    clean()
+
+
+@task
+def show():
+    clean()
+
+    from app.db import redis
+    print redis.get_sparse_matrix()
 
     clean()
 

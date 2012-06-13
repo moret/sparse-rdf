@@ -9,11 +9,11 @@ class IndexParser(object):
         self.redis.clear_sparse_matrix()
         for path_index in range(self.redis.count_paths()):
             path = self.redis.get_path(path_index)
-            for path_index in range(self.redis.count_nodes()):
-                node = self.redis.get_node(path_index)
+            for node_index in range(self.redis.count_nodes()):
+                node = self.redis.get_node(node_index)
                 if node in path:
                     cell_tuple = self.get_tuple(node, path)
-                    self.redis.store_tuple(path_index, path_index, cell_tuple)
+                    self.redis.store_tuple(path_index, node_index, cell_tuple)
 
     def get_tuple(self, node, path):
         nodes_template = tuple(path[::2])

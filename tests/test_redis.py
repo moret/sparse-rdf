@@ -142,6 +142,25 @@ def test_read_sparse_matrix_tuple_out_of_range_returns_None():
     assert None == redis.get_tuple(3, 4)
 
 
+def test_read_sparse_matrix_row_returns_dict_of_size_three_lists():
+    redis.clear_sparse_matrix()
+    redis.store_tuple(0, 0, [1, 2, 3])
+    redis.store_tuple(0, 2, [2, 3, 4])
+    row = redis.get_row(0)
+    assert isinstance(row, dict)
+    assert isinstance(row[0], list)
+    with pytest.raises(KeyError):
+        row[1]
+    assert isinstance(row[2], list)
+    assert 3 == len(row[0])
+    assert 3 == len(row[2])
+
+
+def test_read_sparse_matrix_row_out_of_range_returns_None():
+    redis.clear_sparse_matrix()
+    assert None == redis.get_row(3)
+
+
 def test_read_sparse_matrix_column_returns_dict_of_size_three_lists():
     redis.clear_sparse_matrix()
     redis.store_tuple(0, 0, [1, 2, 3])

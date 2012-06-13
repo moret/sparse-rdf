@@ -1,6 +1,11 @@
 from app.graph_parser import graph_parser
 from app.index_parser import index_parser
 from app.db import Redis
+from app.db import redis
+from tests.assets.paper import paper_nodes
+from tests.assets.paper import paper_paths
+from tests.assets.paper import paper_templates
+from tests.assets.paper import paper_matrix
 
 
 class TestRedis(Redis):
@@ -88,3 +93,13 @@ def test_generate_sparse_matrix_loops_all_nodes_for_each_path(monkeypatch):
 
     index_parser.generate_sparse_matrix()
     assert len(paths) * len(nodes) == test_redis.get_node_invocations
+
+
+def test_generate_sparse_matrix_equals_to_paper_example():
+    redis.replace_all_nodes(paper_nodes)
+    redis.replace_all_paths(paper_paths)
+    redis.replace_all_templates(paper_templates)
+
+    index_parser.generate_sparse_matrix()
+
+    assert paper_matrix == redis.get_sparse_matrix()
