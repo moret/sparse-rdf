@@ -1,9 +1,12 @@
 You know, this is still WIP.
 
-To run it, I'd recommend using virtualenv.
+The project required Python 2.6. To run it, I'd recommend using virtualenv. All other requirements are installable from PyPI using pip. Something like:
 
-After you're in your desired environment, just:
-
+mkdir sparse-rdf_env
+cd sparse-rdf_env
+virtualenv --no-site-packages --python=python2.7 .
+git clone https://github.com/moret/sparse-rdf.git
+cd sparse-rdf
 pip install -r requirements.pip
 
 And to run the tests:

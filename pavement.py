@@ -29,7 +29,8 @@ def parse():
     from app.graph_parser import graph_parser
     from app.index_parser import index_parser
 
-    graph_parser.parse('tests/assets/paper.nt')
+    graph_parser.parse('example-rdfs/tall/paper.nt')
+    # graph_parser.parse('example-rdfs/venti/linkedmdb-latest-dump.nt')
     graph_parser.persist_index()
     index_parser.generate_sparse_matrix()
 
