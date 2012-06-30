@@ -38,6 +38,21 @@ def parse():
 
 
 @task
+def node_query():
+    clean()
+
+    from app.matrix_searcher import matrix_searcher
+    from app.db import es
+
+    node_index = es.search_node('pub1')
+    node = es.get_node(node_index)
+    print node
+    print matrix_searcher.node_query(node_index)
+
+    clean()
+
+
+@task
 def show():
     clean()
 
