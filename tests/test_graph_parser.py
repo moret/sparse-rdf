@@ -1,5 +1,6 @@
 from app.graph_parser import graph_parser
 from app.db import Redis
+from app.db import ElasticSearch
 import rdflib
 
 
@@ -11,41 +12,29 @@ class TestRedis(Redis):
     pass
 
 
+class TestElasticSearch(ElasticSearch):
+    pass
+
+
 def test_exists():
     assert graph_parser
 
 
-# def test_tries_to_parse_file(monkeypatch):
-#     test_graph = TestGraph()
-
-#     def mock_parse(filename, format):
-#         test_graph.parse_invoked = True
-#         test_graph.filename_param = filename
-
-#     test_graph.parse = mock_parse
-#     monkeypatch.setattr(graph_parser, 'graph', test_graph)
-
-#     graph_parser.parse('test_filename.nt')
-
-#     assert test_graph.parse_invoked
-#     assert 'test_filename.nt' == test_graph.filename_param
-
-
 def test_tries_to_store_nodes(monkeypatch):
-    test_redis = TestRedis()
+    test_es = TestElasticSearch()
 
     def mock_replace_all_nodes(nodes):
-        test_redis.replace_all_nodes_invoked = True
-        test_redis.nodes = nodes
+        test_es.replace_all_nodes_invoked = True
+        test_es.nodes = nodes
 
-    test_redis.replace_all_nodes = mock_replace_all_nodes
-    monkeypatch.setattr(graph_parser, 'redis', test_redis)
+    test_es.replace_all_nodes = mock_replace_all_nodes
+    monkeypatch.setattr(graph_parser, 'es', test_es)
 
     graph_parser.parse('tests/assets/paper.nt')
     graph_parser.persist_index()
 
-    assert test_redis.replace_all_nodes_invoked
-    assert 0 < len(test_redis.nodes)
+    assert test_es.replace_all_nodes_invoked
+    assert 0 < len(test_es.nodes)
 
 
 def test_tries_to_store_paths(monkeypatch):

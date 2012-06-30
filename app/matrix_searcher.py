@@ -1,9 +1,11 @@
 from app.db import redis as app_redis
+from app.db import es as app_es
 
 
 class MatrixSearcher(object):
     def __init__(self):
         self.redis = app_redis
+        self.es = app_es
 
     def node_query(self, node_index):
         col = self.redis.get_column(node_index)
@@ -24,7 +26,7 @@ class MatrixSearcher(object):
         row = self.redis.get_row(path_index)
         nodes = []
         for node_index in row.keys():
-            nodes.append(self.redis.get_node(node_index))
+            nodes.append(self.es.get_node(node_index))
         return nodes
 
     # def path_intersection_query(self):

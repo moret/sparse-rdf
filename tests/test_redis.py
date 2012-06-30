@@ -1,21 +1,10 @@
 import pytest
 from app.db import redis
+from app.db import es
 
 
 def test_exists():
     assert redis
-
-
-def test_replace_all_nodes_with_two_nodes():
-    nodes = ['nod1', 'nod2']
-    redis.replace_all_nodes(nodes)
-    assert 2 == redis.count_nodes()
-
-
-def test_replace_all_nodes_with_three_nodes():
-    nodes = ['nod1', 'nod2', 'nod3']
-    redis.replace_all_nodes(nodes)
-    assert 3 == redis.count_nodes()
 
 
 def test_replace_all_paths_with_two_paths():
@@ -32,24 +21,20 @@ def test_replace_all_templates_with_two_templates():
 
 def test_replace_all_paths_doesnt_change_nodes():
     nodes = ['nod1', 'nod2', 'nod3']
-    redis.replace_all_nodes(nodes)
+    es.replace_all_nodes(nodes)
     paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
     redis.replace_all_paths(paths)
+    assert 3 == es.count_nodes()
     assert 2 == redis.count_paths()
 
 
 def test_replace_all_paths_doesnt_change_templates():
     nodes = ['nod1', 'nod2', 'nod3']
-    redis.replace_all_nodes(nodes)
+    es.replace_all_nodes(nodes)
     templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
     redis.replace_all_templates(templates)
+    assert 3 == es.count_nodes()
     assert 2 == redis.count_paths()
-
-
-def test_stored_node_returns_as_string():
-    nodes = ['nod1', 'nod2', 'nod3']
-    redis.replace_all_nodes(nodes)
-    assert isinstance(redis.get_node(1), str)
 
 
 def test_stored_path_returns_as_list():
@@ -62,14 +47,6 @@ def test_stored_template_returns_as_list():
     templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
     redis.replace_all_templates(templates)
     assert isinstance(redis.get_template(1), list)
-
-
-def test_stored_nodes_maintains_order():
-    nodes = ['nod1', 'nod2', 'nod3']
-    redis.replace_all_nodes(nodes)
-    assert 'nod1' == redis.get_node(0)
-    assert 'nod2' == redis.get_node(1)
-    assert 'nod3' == redis.get_node(2)
 
 
 def test_stored_paths_maintains_order():

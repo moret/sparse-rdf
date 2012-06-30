@@ -1,16 +1,18 @@
 from app.db import redis as app_redis
+from app.db import es as app_es
 
 
 class IndexParser(object):
     def __init__(self):
         self.redis = app_redis
+        self.es = app_es
 
     def generate_sparse_matrix(self):
         self.redis.clear_sparse_matrix()
         for path_index in range(self.redis.count_paths()):
             path = self.redis.get_path(path_index)
-            for node_index in range(self.redis.count_nodes()):
-                node = self.redis.get_node(node_index)
+            for node_index in range(self.es.count_nodes()):
+                node = self.es.get_node(node_index)
                 if node in path:
                     cell_tuple = self.get_tuple(node, path)
                     self.redis.store_tuple(path_index, node_index, cell_tuple)

@@ -1,6 +1,8 @@
 You know, this is still WIP.
 
-The project required Python 2.6. To run it, I'd recommend using virtualenv. All other requirements are installable from PyPI using pip. Something like:
+First, make sure you have installed and running MongoDB and ElasticSearch on localhost and on their default ports.
+
+The project requires Python 2.7. To run it, I'd recommend using virtualenv. All other requirements are installable from PyPI using pip. Something like:
 
 mkdir sparse-rdf_env
 cd sparse-rdf_env

@@ -3,6 +3,7 @@ from app.index_parser import index_parser
 from app.matrix_searcher import matrix_searcher
 from app.db import Redis
 from app.db import redis
+from app.db import es
 from tests.assets.paper import paper_nodes
 from tests.assets.paper import paper_paths
 from tests.assets.paper import paper_templates
@@ -13,7 +14,7 @@ class TestRedis(Redis):
 
 
 def set_default_paper_matrix():
-    redis.replace_all_nodes(paper_nodes)
+    es.replace_all_nodes(paper_nodes)
     redis.replace_all_paths(paper_paths)
     redis.replace_all_templates(paper_templates)
 

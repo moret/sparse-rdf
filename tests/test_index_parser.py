@@ -2,6 +2,8 @@ from app.graph_parser import graph_parser
 from app.index_parser import index_parser
 from app.db import Redis
 from app.db import redis
+from app.db import ElasticSearch
+from app.db import es
 from tests.assets.paper import paper_nodes
 from tests.assets.paper import paper_paths
 from tests.assets.paper import paper_templates
@@ -9,6 +11,10 @@ from tests.assets.paper import paper_matrix
 
 
 class TestRedis(Redis):
+    pass
+
+
+class TestElasticSearch(ElasticSearch):
     pass
 
 
@@ -65,7 +71,7 @@ def test_generate_sparse_matrix_loops_all_paths(monkeypatch):
     nodes = ['nod1', 'nod2', 'nod3']
     paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
     templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
-    test_redis.replace_all_nodes(nodes)
+    es.replace_all_nodes(nodes)
     test_redis.replace_all_paths(paths)
     test_redis.replace_all_templates(templates)
 
@@ -74,29 +80,29 @@ def test_generate_sparse_matrix_loops_all_paths(monkeypatch):
 
 
 def test_generate_sparse_matrix_loops_all_nodes_for_each_path(monkeypatch):
-    test_redis = TestRedis()
-    test_redis.get_node_invocations = 0
+    test_es = TestElasticSearch()
+    test_es.get_node_invocations = 0
 
     def mock_get_node(*args, **kwargs):
-        test_redis.get_node_invocations += 1
-        return super(TestRedis, test_redis).get_node(*args, **kwargs)
+        test_es.get_node_invocations += 1
+        return super(TestElasticSearch, test_es).get_node(*args, **kwargs)
 
-    test_redis.get_node = mock_get_node
-    monkeypatch.setattr(index_parser, 'redis', test_redis)
+    test_es.get_node = mock_get_node
+    monkeypatch.setattr(index_parser, 'es', test_es)
 
     nodes = ['nod1', 'nod2', 'nod3']
     paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
     templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
-    test_redis.replace_all_nodes(nodes)
-    test_redis.replace_all_paths(paths)
-    test_redis.replace_all_templates(templates)
+    test_es.replace_all_nodes(nodes)
+    redis.replace_all_paths(paths)
+    redis.replace_all_templates(templates)
 
     index_parser.generate_sparse_matrix()
-    assert len(paths) * len(nodes) == test_redis.get_node_invocations
+    assert len(paths) * len(nodes) == test_es.get_node_invocations
 
 
 def test_generate_sparse_matrix_equals_to_paper_example():
-    redis.replace_all_nodes(paper_nodes)
+    es.replace_all_nodes(paper_nodes)
     redis.replace_all_paths(paper_paths)
     redis.replace_all_templates(paper_templates)
 

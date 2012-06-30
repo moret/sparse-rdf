@@ -1,5 +1,6 @@
 import urllib
 from app.db import redis as app_redis
+from app.db import es as app_es
 from lib.ntriples import NTriplesParser
 
 
@@ -61,6 +62,7 @@ class TripleSink(object):
 class GraphParser(object):
     def __init__(self):
         self.redis = app_redis
+        self.es = app_es
         self.triplesink = TripleSink()
 
     def parse(self, filename):
@@ -68,20 +70,17 @@ class GraphParser(object):
         self.__find_paths_templates__()
 
     def __parse_triples__(self, filename):
-        print 'parsing triples'
         parser = NTriplesParser(sink=self.triplesink)
         u = urllib.urlopen(filename)
         parser.parse(u)
         u.close()
 
     def persist_index(self):
-        print 'persisting indexes'
-        self.redis.replace_all_nodes(self.triplesink.nodes())
+        self.es.replace_all_nodes(self.triplesink.nodes())
         self.redis.replace_all_paths(self.paths())
         self.redis.replace_all_templates(self.templates())
 
     def __find_paths_templates__(self):
-        print 'running bfs to find paths and templates'
         sources = self.triplesink.sources()
         sinks = self.triplesink.sinks()
 

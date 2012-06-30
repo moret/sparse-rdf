@@ -1,6 +1,7 @@
 import json
 
 from redis import StrictRedis
+import pyes
 
 
 class Redis(object):
@@ -33,15 +34,6 @@ class Redis(object):
 
     def _get_collection_of_lists_index(self, n, e):
         return self.r.zrank(n, json.dumps(e))
-
-    def replace_all_nodes(self, nodes):
-        self._replace_list('nodes', nodes)
-
-    def count_nodes(self):
-        return self._count_list('nodes')
-
-    def get_node(self, index):
-        return self._get_list_element('nodes', index)
 
     def replace_all_paths(self, paths):
         self._replace_collection_of_lists('paths', paths)
@@ -118,3 +110,45 @@ class Redis(object):
             self.r.delete(col_name)
 
 redis = Redis()
+
+
+class ElasticSearch(object):
+    def _get_connection(self):
+        return pyes.ES()
+
+    es = property(_get_connection)
+
+    def replace_all_nodes(self, nodes):
+        self.es.delete_index_if_exists('nodes')
+        self.es.create_index('nodes')
+
+        self.es.put_mapping('node-type', {'properties': {
+                'value': {
+                    'boost': 1.0,
+                    'index': 'analyzed',
+                    'store': 'yes',
+                    'type': 'string',
+                    'term_vector': 'with_positions_offsets'
+                }
+            }
+        }, ['nodes'])
+
+        # indexes must be larger than zero
+        for index, node in enumerate(nodes):
+            self.es.index({'value': node}, 'nodes', 'node-type', index + 1)
+
+        self.es.refresh(['nodes'])
+
+    def count_nodes(self):
+        return self.es.index_stats()._all.indices['nodes'].total.docs.count
+
+    def get_node(self, index):
+        return str(self.es.get('nodes', 'node-type', index + 1)['value'])
+
+    def search_node(self, word):
+        query = pyes.FieldQuery(pyes.FieldParameter('value', word))
+        result = self.es.search(query=query)
+        if result:
+            return int(result[0]._meta['id']) - 1
+
+es = ElasticSearch()
