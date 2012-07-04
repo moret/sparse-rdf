@@ -4,12 +4,37 @@ import pyes
 from redis import StrictRedis
 
 
-class NodesIndex(object):
+class ElasticSearchBasedStorage(object):
     def _get_connection(self):
         return pyes.ES()
 
     es = property(_get_connection)
 
+
+class RedisBasedStorage(object):
+    def _get_connection(self):
+        return StrictRedis()
+
+    r = property(_get_connection)
+
+
+class RedisBasedIndex(RedisBasedStorage):
+    def _replace_collection_of_lists(self, n, l):
+        self.r.delete(n)
+        for s, i in enumerate(l):
+            self.r.zadd(n, s, json.dumps(i))
+
+    def _count_collection_of_lists(self, n):
+        return self.r.zcard(n)
+
+    def _get_collection_of_lists_element(self, n, i):
+        return json.loads(self.r.zrangebyscore(n, i, i)[0])
+
+    def _get_collection_of_lists_index(self, n, e):
+        return self.r.zrank(n, json.dumps(e))
+
+
+class NodesIndex(ElasticSearchBasedStorage):
     def replace_all_nodes(self, nodes):
         self.es.delete_index_if_exists('nodes')
         self.es.create_index('nodes')
@@ -46,23 +71,7 @@ class NodesIndex(object):
 ni = NodesIndex()
 
 
-class PathsIndex(object):
-    def _get_connection(self):
-        return StrictRedis()
-
-    r = property(_get_connection)
-
-    def _replace_collection_of_lists(self, n, l):
-        self.r.delete(n)
-        for s, i in enumerate(l):
-            self.r.zadd(n, s, json.dumps(i))
-
-    def _count_collection_of_lists(self, n):
-        return self.r.zcard(n)
-
-    def _get_collection_of_lists_element(self, n, i):
-        return json.loads(self.r.zrangebyscore(n, i, i)[0])
-
+class PathsIndex(RedisBasedIndex):
     def replace_all_paths(self, paths):
         self._replace_collection_of_lists('paths', paths)
 
@@ -75,26 +84,7 @@ class PathsIndex(object):
 pi = PathsIndex()
 
 
-class TemplatesIndex(object):
-    def _get_connection(self):
-        return StrictRedis()
-
-    r = property(_get_connection)
-
-    def _replace_collection_of_lists(self, n, l):
-        self.r.delete(n)
-        for s, i in enumerate(l):
-            self.r.zadd(n, s, json.dumps(i))
-
-    def _count_collection_of_lists(self, n):
-        return self.r.zcard(n)
-
-    def _get_collection_of_lists_element(self, n, i):
-        return json.loads(self.r.zrangebyscore(n, i, i)[0])
-
-    def _get_collection_of_lists_index(self, n, e):
-        return self.r.zrank(n, json.dumps(e))
-
+class TemplatesIndex(RedisBasedIndex):
     def replace_all_templates(self, templates):
         self._replace_collection_of_lists('templates', templates)
 
@@ -110,12 +100,7 @@ class TemplatesIndex(object):
 ti = TemplatesIndex()
 
 
-class SparseMatrix(object):
-    def _get_connection(self):
-        return StrictRedis()
-
-    r = property(_get_connection)
-
+class SparseMatrix(RedisBasedStorage):
     def store_tuple(self, path_index, node_index, cell_tuple):
         if cell_tuple == None or (isinstance(cell_tuple, list) and len(cell_tuple) == 3):
             self.r.sadd('sparse_matrix_rows', 'row:%d' % path_index)
@@ -214,6 +199,9 @@ class DB(object):
 
     def store_tuple(self, path_index, node_index, cell_tuple):
         return self.sm.store_tuple(path_index, node_index, cell_tuple)
+
+    def get_tuple(self, path_index, node_index):
+        return self.sm.get_tuple(path_index, node_index)
 
     def get_row(self, path_index):
         return self.sm.get_row(path_index)
