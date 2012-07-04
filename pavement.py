@@ -13,7 +13,7 @@ import coverage
 @task
 def tests():
     clean()
-    cov = coverage.coverage()
+    cov = coverage.coverage(omit=['lib/ntriples.py'])
     cov.erase()
     cov.start()
     pytest.main('-s -v tests')
