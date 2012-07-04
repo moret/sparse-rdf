@@ -1,7 +1,9 @@
 import urllib
-from app.db import redis as app_redis
-from app.db import es as app_es
+# from app.db import redis as app_redis
+# from app.db import es as app_es
 from lib.ntriples import NTriplesParser
+
+from app.persistance import db
 
 
 def mark_and_enqueue(path, edge, node, qeue, marked):
@@ -61,8 +63,6 @@ class TripleSink(object):
 # templates indexes
 class GraphParser(object):
     def __init__(self):
-        self.redis = app_redis
-        self.es = app_es
         self.triplesink = TripleSink()
 
     def parse(self, filename):
@@ -76,9 +76,9 @@ class GraphParser(object):
         u.close()
 
     def persist_index(self):
-        self.es.replace_all_nodes(self.triplesink.nodes())
-        self.redis.replace_all_paths(self.paths())
-        self.redis.replace_all_templates(self.templates())
+        db.replace_all_nodes(self.triplesink.nodes())
+        db.replace_all_paths(self.paths())
+        db.replace_all_templates(self.templates())
 
     def __find_paths_templates__(self):
         sources = self.triplesink.sources()

@@ -215,8 +215,11 @@ class DB(object):
     def store_tuple(self, path_index, node_index, cell_tuple):
         return self.sm.store_tuple(path_index, node_index, cell_tuple)
 
-    # def get_tuple(self, path_index, node_index):
-    #     return self.sm.get_tuple(path_index, node_index)
+    def get_row(self, path_index):
+        return self.sm.get_row(path_index)
+
+    def get_column(self, node_index):
+        return self.sm.get_column(node_index)
 
     def get_sparse_matrix(self):
         return self.sm.get_sparse_matrix()

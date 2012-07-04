@@ -1,24 +1,30 @@
 from app.index_parser import index_parser
 
 from app.matrix_searcher import matrix_searcher
-from app.db import Redis
-from app.db import redis
-from app.db import es
+from app.persistance import db
 from tests.assets.paper import paper_nodes
 from tests.assets.paper import paper_paths
 from tests.assets.paper import paper_templates
 
 
-class TestRedis(Redis):
-    pass
-
-
 def set_default_paper_matrix():
-    es.replace_all_nodes(paper_nodes)
-    redis.replace_all_paths(paper_paths)
-    redis.replace_all_templates(paper_templates)
+    db.replace_all_nodes(paper_nodes)
+    db.replace_all_paths(paper_paths)
+    db.replace_all_templates(paper_templates)
 
     index_parser.generate_sparse_matrix()
+
+
+def mock_method_with_counter(monkeypatch, obj, method_name):
+    counters = {'invocations': 0}
+    proxied = getattr(obj, method_name)
+
+    def mock(*args, **kwargs):
+        counters['invocations'] += 1
+        return proxied(*args, **kwargs)
+
+    monkeypatch.setattr(obj, method_name, mock)
+    return counters
 
 
 def test_exist():
@@ -26,17 +32,10 @@ def test_exist():
 
 
 def test_node_query_retrieves_column(monkeypatch):
-    test_redis = TestRedis()
-
-    def mock_get_column(node_index):
-        test_redis.get_column_invoked = True
-        return {}
-
-    test_redis.get_column = mock_get_column
-    monkeypatch.setattr(matrix_searcher, 'redis', test_redis)
+    counters = mock_method_with_counter(monkeypatch, db, 'get_column')
 
     matrix_searcher.node_query(2)
-    assert test_redis.get_column_invoked
+    assert 1 == counters['invocations']
 
 
 def test_node_query_researcher_retrieves_expected_subset():
@@ -73,17 +72,10 @@ def test_final_node_query_pub1_retrieves_expected_subset():
 
 
 def test_path_query_retrieves_column(monkeypatch):
-    test_redis = TestRedis()
-
-    def mock_get_row(path_index):
-        test_redis.get_row_invoked = True
-        return {}
-
-    test_redis.get_row = mock_get_row
-    monkeypatch.setattr(matrix_searcher, 'redis', test_redis)
+    counters = mock_method_with_counter(monkeypatch, db, 'get_row')
 
     matrix_searcher.path_query(0)
-    assert test_redis.get_row_invoked
+    assert 1 == counters['invocations']
 
 
 def test_path_query_path0_retrieves_expected_subset():

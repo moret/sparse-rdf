@@ -1,32 +1,27 @@
-from app.db import redis as app_redis
-from app.db import es as app_es
+from app.persistance import db
 
 
 class MatrixSearcher(object):
-    def __init__(self):
-        self.redis = app_redis
-        self.es = app_es
-
     def node_query(self, node_index):
-        col = self.redis.get_column(node_index)
+        col = db.get_column(node_index)
         paths = []
         for path_index in col.keys():
-            paths.append(self.redis.get_path(path_index))
+            paths.append(db.get_path(path_index))
         return paths
 
     def final_node_query(self, node_index):
-        col = self.redis.get_column(node_index)
+        col = db.get_column(node_index)
         paths = []
         for path_index, t in col.items():
             if t[0] == (t[1] - 1):
-                paths.append(self.redis.get_path(path_index))
+                paths.append(db.get_path(path_index))
         return paths
 
     def path_query(self, path_index):
-        row = self.redis.get_row(path_index)
+        row = db.get_row(path_index)
         nodes = []
         for node_index in row.keys():
-            nodes.append(self.es.get_node(node_index))
+            nodes.append(db.get_node(node_index))
         return nodes
 
     # def path_intersection_query(self):

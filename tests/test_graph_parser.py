@@ -1,19 +1,21 @@
-from app.graph_parser import graph_parser
-from app.db import Redis
-from app.db import ElasticSearch
 import rdflib
 
-
-class TestGraph(rdflib.Graph):
-    pass
-
-
-class TestRedis(Redis):
-    pass
+from app.graph_parser import graph_parser
+from app.persistance import db
 
 
-class TestElasticSearch(ElasticSearch):
-    pass
+def mock_method_with_counter(monkeypatch, obj, method_name):
+    counters = {'invocations': 0}
+    proxied = getattr(obj, method_name)
+
+    def mock(*args, **kwargs):
+        counters['invocations'] += 1
+        counters['args'] = args
+        counters['kwargs'] = kwargs
+        return proxied(*args, **kwargs)
+
+    monkeypatch.setattr(obj, method_name, mock)
+    return counters
 
 
 def test_exists():
@@ -21,54 +23,33 @@ def test_exists():
 
 
 def test_tries_to_store_nodes(monkeypatch):
-    test_es = TestElasticSearch()
-
-    def mock_replace_all_nodes(nodes):
-        test_es.replace_all_nodes_invoked = True
-        test_es.nodes = nodes
-
-    test_es.replace_all_nodes = mock_replace_all_nodes
-    monkeypatch.setattr(graph_parser, 'es', test_es)
+    counters = mock_method_with_counter(monkeypatch, db, 'replace_all_nodes')
 
     graph_parser.parse('tests/assets/paper.nt')
     graph_parser.persist_index()
 
-    assert test_es.replace_all_nodes_invoked
-    assert 0 < len(test_es.nodes)
+    assert 1 == counters['invocations']
+    assert 0 < len(counters['args'][0])
 
 
 def test_tries_to_store_paths(monkeypatch):
-    test_redis = TestRedis()
-
-    def mock_replace_all_paths(paths):
-        test_redis.replace_all_paths_invoked = True
-        test_redis.paths = paths
-
-    test_redis.replace_all_paths = mock_replace_all_paths
-    monkeypatch.setattr(graph_parser, 'redis', test_redis)
+    counters = mock_method_with_counter(monkeypatch, db, 'replace_all_paths')
 
     graph_parser.parse('tests/assets/paper.nt')
     graph_parser.persist_index()
 
-    assert test_redis.replace_all_paths_invoked
-    assert 0 < len(test_redis.paths)
+    assert 1 == counters['invocations']
+    assert 0 < len(counters['args'][0])
 
 
 def test_tries_to_store_templates(monkeypatch):
-    test_redis = TestRedis()
-
-    def mock_replace_all_templates(templates):
-        test_redis.replace_all_templates_invoked = True
-        test_redis.templates = templates
-
-    test_redis.replace_all_templates = mock_replace_all_templates
-    monkeypatch.setattr(graph_parser, 'redis', test_redis)
+    counters = mock_method_with_counter(monkeypatch, db, 'replace_all_templates')
 
     graph_parser.parse('tests/assets/paper.nt')
     graph_parser.persist_index()
 
-    assert test_redis.replace_all_templates_invoked
-    assert 0 < len(test_redis.templates)
+    assert 1 == counters['invocations']
+    assert 0 < len(counters['args'][0])
 
 
 def test_aut1_is_a_node():
