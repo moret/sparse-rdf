@@ -10,17 +10,6 @@ class Redis(object):
 
     r = property(_get_connection)
 
-    def _replace_list(self, n, l):
-        self.r.delete(n)
-        for i, e in enumerate(l):
-            self.r.rpush(n, e)
-
-    def _count_list(self, n):
-        return int(self.r.llen(n))
-
-    def _get_list_element(self, n, i):
-        return self.r.lindex(n, i)
-
     def _replace_collection_of_lists(self, n, l):
         self.r.delete(n)
         for s, i in enumerate(l):
@@ -46,12 +35,6 @@ class Redis(object):
 
     def replace_all_templates(self, templates):
         self._replace_collection_of_lists('templates', templates)
-
-    def count_templates(self):
-        return self._count_collection_of_lists('templates')
-
-    def get_template(self, index):
-        return self._get_collection_of_lists_element('templates', index)
 
     def get_template_index(self, template):
         return self._get_collection_of_lists_index('templates', template)
@@ -144,11 +127,5 @@ class ElasticSearch(object):
 
     def get_node(self, index):
         return str(self.es.get('nodes', 'node-type', index + 1)['value'])
-
-    def search_node(self, word):
-        query = pyes.FieldQuery(pyes.FieldParameter('value', word))
-        result = self.es.search(query=query)
-        if result:
-            return int(result[0]._meta['id']) - 1
 
 es = ElasticSearch()

@@ -1,75 +1,9 @@
 import pytest
 from app.db import redis
-from app.db import es
 
 
 def test_exists():
     assert redis
-
-
-def test_replace_all_paths_with_two_paths():
-    paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
-    redis.replace_all_paths(paths)
-    assert 2 == redis.count_paths()
-
-
-def test_replace_all_templates_with_two_templates():
-    templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
-    redis.replace_all_templates(templates)
-    assert 2 == redis.count_templates()
-
-
-def test_replace_all_paths_doesnt_change_nodes():
-    nodes = ['nod1', 'nod2', 'nod3']
-    es.replace_all_nodes(nodes)
-    paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
-    redis.replace_all_paths(paths)
-    assert 3 == es.count_nodes()
-    assert 2 == redis.count_paths()
-
-
-def test_replace_all_paths_doesnt_change_templates():
-    nodes = ['nod1', 'nod2', 'nod3']
-    es.replace_all_nodes(nodes)
-    templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
-    redis.replace_all_templates(templates)
-    assert 3 == es.count_nodes()
-    assert 2 == redis.count_paths()
-
-
-def test_stored_path_returns_as_list():
-    paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
-    redis.replace_all_paths(paths)
-    assert isinstance(redis.get_path(1), list)
-
-
-def test_stored_template_returns_as_list():
-    templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
-    redis.replace_all_templates(templates)
-    assert isinstance(redis.get_template(1), list)
-
-
-def test_stored_paths_maintains_order():
-    paths = [['nod1', 'edge1', 'nod2'], ['nod2', 'edge2', 'nod3']]
-    redis.replace_all_paths(paths)
-    assert ['nod1', 'edge1', 'nod2'] == redis.get_path(0)
-    assert ['nod2', 'edge2', 'nod3'] == redis.get_path(1)
-
-
-def test_stored_templates_maintains_order():
-    templates = [['nod1', 'nod2'], ['nod2', 'nod3']]
-    redis.replace_all_templates(templates)
-    assert ['nod1', 'nod2'] == redis.get_template(0)
-    assert ['nod2', 'nod3'] == redis.get_template(1)
-
-
-def test_find_template_index():
-    t1 = ['nod1', 'nod2']
-    t2 = ['nod2', 'nod3']
-    templates = [t1, t2]
-    redis.replace_all_templates(templates)
-    assert 0 == redis.get_template_index(t1)
-    assert 1 == redis.get_template_index(t2)
 
 
 def test_accepts_store_size_three_list():
