@@ -42,10 +42,10 @@ def node_query():
     clean()
 
     from app.matrix_searcher import matrix_searcher
-    from app.db import es
+    from app.persistance import db
 
-    node_index = es.search_node('pub1')
-    node = es.get_node(node_index)
+    node_index = db.search_node('pub1')
+    node = db.get_node(node_index)
     print node
     print matrix_searcher.node_query(node_index)
 
@@ -56,8 +56,8 @@ def node_query():
 def show():
     clean()
 
-    from app.db import redis
-    print redis.get_sparse_matrix()
+    from app.persistance import db
+    print db.get_sparse_matrix()
 
     clean()
 
