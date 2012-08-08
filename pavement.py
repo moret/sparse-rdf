@@ -6,17 +6,26 @@ sys.path = ['.'] + sys.path
 
 from paver.easy import task
 from paver.easy import sh
+from paver.easy import cmdopts
 import pytest
 import coverage
 
 
 @task
-def tests():
+@cmdopts([
+    ('keyword=', 'k', 'only run python tests which match given keyword expression')
+])
+def tests(options):
     clean()
     cov = coverage.coverage(omit=['lib/ntriples.py'])
     cov.erase()
     cov.start()
-    pytest.main('-s -v tests')
+
+    if 'keyword' in options:
+        pytest.main('-s -v tests -k %s' % options.keyword)
+    else:
+        pytest.main('-s -v tests')
+
     cov.stop()
     cov.report()
     clean()
