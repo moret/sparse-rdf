@@ -1,6 +1,7 @@
 import json
 
 import pyes
+import pycassa
 from redis import StrictRedis
 
 
@@ -32,6 +33,43 @@ class RedisBasedIndex(RedisBasedStorage):
 
     def _get_collection_of_lists_index(self, n, e):
         return self.r.zrank(n, json.dumps(e))
+
+
+class CassandraBasedStorage(object):
+    ks = 'sparse_keyspace'
+
+    def _get_system_manager(self):
+        return pycassa.system_manager.SystemManager()
+
+    sm = property(_get_system_manager)
+
+    def _get_connection(self):
+        return pycassa.ConnectionPool(self.ks)
+
+    c = property(_get_connection)
+
+    def _ks_created(self):
+        return self.ks in self.sm.list_keyspaces()
+
+    def _ks_init(self):
+        self.sm.create_keyspace(self.ks,
+                pycassa.system_manager.SIMPLE_STRATEGY,
+                {'replication_factor': '1'})
+
+    def __init__(self, family_name):
+        if not self._ks_created():
+            self._ks_init()
+        if not self._cf_created(family_name):
+            self._cf_init(family_name)
+
+    def _cf_created(self, family_name):
+        return family_name in self.sm.get_keyspace_column_families(self.ks)
+
+    def _cf_list(self, family_name):
+        return pycassa.ColumnFamily(self.c, family_name)
+
+    def _cf_init(self, family_name):
+        self.sm.create_column_family(self.ks, family_name)
 
 
 class NodesIndex(ElasticSearchBasedStorage):
@@ -71,15 +109,25 @@ class NodesIndex(ElasticSearchBasedStorage):
 ni = NodesIndex()
 
 
-class PathsIndex(RedisBasedIndex):
+class PathsIndex(CassandraBasedStorage):
+    def __init__(self):
+        super(PathsIndex, self).__init__('paths')
+
+    def _paths(self):
+        return self._cf_list('paths')
+
+    paths = property(_paths)
+
     def replace_all_paths(self, paths):
-        self._replace_collection_of_lists('paths', paths)
+        self.paths.truncate()
+        for index, path in enumerate(paths):
+            self.paths.insert(str(index), {'value': json.dumps(path)})
 
     def count_paths(self):
-        return self._count_collection_of_lists('paths')
+        return len(list(self.paths.get_range()))
 
     def get_path(self, index):
-        return self._get_collection_of_lists_element('paths', index)
+        return json.loads(self.paths.get(str(index))['value'])
 
 pi = PathsIndex()
 
