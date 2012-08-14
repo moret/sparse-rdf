@@ -19,22 +19,6 @@ class RedisBasedStorage(object):
     r = property(_get_connection)
 
 
-class RedisBasedIndex(RedisBasedStorage):
-    def _replace_collection_of_lists(self, n, l):
-        self.r.delete(n)
-        for s, i in enumerate(l):
-            self.r.zadd(n, s, json.dumps(i))
-
-    def _count_collection_of_lists(self, n):
-        return self.r.zcard(n)
-
-    def _get_collection_of_lists_element(self, n, i):
-        return json.loads(self.r.zrangebyscore(n, i, i)[0])
-
-    def _get_collection_of_lists_index(self, n, e):
-        return self.r.zrank(n, json.dumps(e))
-
-
 class CassandraBasedStorage(object):
     ks = 'sparse_keyspace'
 
@@ -56,11 +40,12 @@ class CassandraBasedStorage(object):
                 pycassa.system_manager.SIMPLE_STRATEGY,
                 {'replication_factor': '1'})
 
-    def __init__(self, family_name):
+    def __init__(self, families):
         if not self._ks_created():
             self._ks_init()
-        if not self._cf_created(family_name):
-            self._cf_init(family_name)
+        for family in families:
+            if not self._cf_created(family):
+                self._cf_init(family)
 
     def _cf_created(self, family_name):
         return family_name in self.sm.get_keyspace_column_families(self.ks)
@@ -70,6 +55,13 @@ class CassandraBasedStorage(object):
 
     def _cf_init(self, family_name):
         self.sm.create_column_family(self.ks, family_name)
+
+    def _cf_drop(self, family_name):
+        self.sm.drop_column_family(self.ks, family_name)
+
+    def _cf_reset(self, family_name):
+        self._cf_drop(family_name)
+        self._cf_init(family_name)
 
 
 class NodesIndex(ElasticSearchBasedStorage):
@@ -111,7 +103,7 @@ ni = NodesIndex()
 
 class PathsIndex(CassandraBasedStorage):
     def __init__(self):
-        super(PathsIndex, self).__init__('paths')
+        super(PathsIndex, self).__init__(['paths'])
 
     def _paths(self):
         return self._cf_list('paths')
@@ -119,7 +111,7 @@ class PathsIndex(CassandraBasedStorage):
     paths = property(_paths)
 
     def replace_all_paths(self, paths):
-        self.paths.truncate()
+        self._cf_reset('paths')
         for index, path in enumerate(paths):
             self.paths.insert(str(index), {'value': json.dumps(path)})
 
@@ -132,18 +124,40 @@ class PathsIndex(CassandraBasedStorage):
 pi = PathsIndex()
 
 
-class TemplatesIndex(RedisBasedIndex):
+class TemplatesIndex(CassandraBasedStorage):
+    def __init__(self):
+        super(TemplatesIndex, self).__init__(['templates', 'templates_index'])
+
+    def _templates(self):
+        return self._cf_list('templates')
+
+    def _templates_index(self):
+        return self._cf_list('templates_index')
+
+    templates = property(_templates)
+    templates_index = property(_templates_index)
+
     def replace_all_templates(self, templates):
-        self._replace_collection_of_lists('templates', templates)
+        self._cf_reset('templates')
+        self._cf_reset('templates_index')
+        for index, template in enumerate(templates):
+            self.templates.insert(str(index), {'value': json.dumps(template)})
+            self.templates_index.insert(json.dumps(template), {'idx': str(index)})
 
     def count_templates(self):
-        return self._count_collection_of_lists('templates')
+        return len(list(self.templates.get_range()))
 
     def get_template(self, index):
-        return self._get_collection_of_lists_element('templates', index)
+        try:
+            return json.loads(self.templates.get(str(index))['value'])
+        except:
+            return None
 
     def get_template_index(self, template):
-        return self._get_collection_of_lists_index('templates', template)
+        try:
+            return int(self.templates_index.get(json.dumps(template))['idx'])
+        except:
+            return None
 
 ti = TemplatesIndex()
 

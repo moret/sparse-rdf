@@ -9,7 +9,7 @@ test_cf = 'test_cf'
 class CassandraTestBasedStorage(CassandraBasedStorage):
     def __init__(self):
         self.ks = test_ks
-        super(CassandraTestBasedStorage, self).__init__(test_cf)
+        super(CassandraTestBasedStorage, self).__init__([test_cf])
 
 
 def test_exists():
