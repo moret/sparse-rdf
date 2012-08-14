@@ -21,7 +21,7 @@ def tests(options):
     cov.erase()
     cov.start()
 
-    if 'keyword' in options:
+    if hasattr(options, 'keyword'):
         pytest.main('-s -v tests -k %s' % options.keyword)
     else:
         pytest.main('-s -v tests')
