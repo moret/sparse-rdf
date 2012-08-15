@@ -1,18 +1,8 @@
-from app.index_parser import index_parser
-
+from util.test import set_default_paper_matrix
 from app.matrix_searcher import matrix_searcher
 from app.persistance import db
 from tests.assets.paper import paper_nodes
 from tests.assets.paper import paper_paths
-from tests.assets.paper import paper_templates
-
-
-def set_default_paper_matrix():
-    db.replace_all_nodes(paper_nodes)
-    db.replace_all_paths(paper_paths)
-    db.replace_all_templates(paper_templates)
-
-    index_parser.generate_sparse_matrix()
 
 
 def mock_method_with_counter(monkeypatch, obj, method_name):
