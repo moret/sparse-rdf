@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 import os
-import json
 
 import daemon
 import lockfile
@@ -12,6 +11,11 @@ import tornado.web
 import tornado.auth
 
 from conf.settings import confs
+
+
+class NodeQueryHome(tornado.web.RequestHandler):
+    def get(self):
+        self.render('node-query.html')
 
 
 class NodeQueryHandler(tornado.web.RequestHandler):
@@ -30,16 +34,19 @@ class NodeQueryHandler(tornado.web.RequestHandler):
         if node_index != None:
             result['selected_node'] = db.get_node(node_index)
             result['query_result'] = matrix_searcher.node_query(node_index)
+        else:
+            self.set_status(404)
 
-        self.finish(json.dumps(result))
+        self.finish(result)
 
 
 def start():
     application = tornado.web.Application([
+            (r'/node-query/?', NodeQueryHome),
             (r'/node-query/(.*)', NodeQueryHandler),
         ], **{
-            'static_path': os.path.join('static'),
-            'template_path': os.path.join('templates'),
+            'static_path': os.path.join('web/static'),
+            'template_path': os.path.join('web/templates'),
             'debug': confs.debug,
             'cookie_secret': confs.cookie_secret
     })
