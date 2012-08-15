@@ -67,21 +67,6 @@ def parse():
 
 
 @task
-def node_query():
-    clean()
-
-    from app.matrix_searcher import matrix_searcher
-    from app.persistance import db
-
-    node_index = db.search_node('pub1')
-    node = db.get_node(node_index)
-    print node
-    print matrix_searcher.node_query(node_index)
-
-    clean()
-
-
-@task
 def show():
     clean()
 
